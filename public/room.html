@@ -924,9 +924,9 @@
         screenShareVideo.style.display = "block";
         document.getElementById("screen-share-indicator").classList.add("show");
         
-        // Mute the screen share video for the host to prevent audio echo
+        // Remove the mute for host to see their own screen share
         if (isHost) {
-            screenShareVideo.muted = true;
+            screenShareVideo.muted = false;
         }
       }
 
@@ -991,14 +991,18 @@
         placeholder.style.display = "none";
         videoPlayer.style.display = "block";
         screenShareVideo.style.display = "none";
-        videoPlayer.src = videoUrl;
+        
+        // Ensure the video URL is absolute
+        const absoluteUrl = videoUrl.startsWith('http') ? videoUrl : window.location.origin + videoUrl;
+        videoPlayer.src = absoluteUrl;
 
         videoPlayer.addEventListener("loadeddata", () => {
           isVideoLoaded = true;
           addSystemMessage("Video loaded and ready!");
         });
 
-        videoPlayer.addEventListener("error", () => {
+        videoPlayer.addEventListener("error", (e) => {
+          console.error("Video loading error:", e);
           placeholder.innerHTML = `
                     <div>
                         <div style="font-size: 3rem; margin-bottom: 20px;">❌</div>
