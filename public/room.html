@@ -557,6 +557,7 @@
       let localStream = null;
       let peerConnections = new Map();
       let currentMode = "none"; // 'none', 'video', 'screen-share'
+      let iceCandidateQueue = new Map(); // Queue for ICE candidates
 
       // WebRTC Configuration
       const rtcConfig = {
@@ -769,6 +770,9 @@
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
+          // Apply any queued ICE candidates
+          await applyQueuedIceCandidates(data.sender);
+
           socket.emit("webrtc-answer", {
             target: data.sender,
             answer: answer,
@@ -800,6 +804,10 @@
             });
 
             await pc.setRemoteDescription(data.answer);
+            
+            // Apply any queued ICE candidates
+            await applyQueuedIceCandidates(data.sender);
+            
             showConnectionStatus("connected");
           }
         } catch (error) {
@@ -813,7 +821,18 @@
           console.log('Received ICE candidate');
           const pc = peerConnections.get(data.sender);
           if (pc && data.candidate) {
-            await pc.addIceCandidate(data.candidate);
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+              // If we have a remote description, add the candidate immediately
+              await pc.addIceCandidate(data.candidate);
+              console.log('Added ICE candidate immediately');
+            } else {
+              // Otherwise, queue it
+              if (!iceCandidateQueue.has(data.sender)) {
+                iceCandidateQueue.set(data.sender, []);
+              }
+              iceCandidateQueue.get(data.sender).push(data.candidate);
+              console.log('Queued ICE candidate for later');
+            }
           }
         } catch (error) {
           console.error("Error handling ICE candidate:", error);
@@ -933,6 +952,25 @@
         }
 
         return pc;
+      }
+
+      // Function to apply queued ICE candidates
+      async function applyQueuedIceCandidates(peerId) {
+        const pc = peerConnections.get(peerId);
+        const queue = iceCandidateQueue.get(peerId) || [];
+        
+        if (pc && queue.length > 0) {
+          console.log(`Applying ${queue.length} queued ICE candidates for peer ${peerId}`);
+          for (const candidate of queue) {
+            try {
+              await pc.addIceCandidate(candidate);
+              console.log('Applied queued ICE candidate:', candidate.candidate);
+            } catch (error) {
+              console.error('Error applying queued ICE candidate:', error);
+            }
+          }
+          iceCandidateQueue.delete(peerId);
+        }
       }
 
       // Screen Sharing Functions
