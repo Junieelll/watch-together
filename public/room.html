@@ -633,7 +633,11 @@
         if (currentMode === "screen-share") {
           stopScreenShare();
         }
-        loadVideo(data.videoUrl);
+        // Only load video if we're not the host (host already loaded it)
+        if (!isHost) {
+          console.log("Non-host received video-set event:", data.videoUrl);
+          loadVideo(data.videoUrl);
+        }
       });
 
       socket.on("sync-video", (data) => {
@@ -957,6 +961,7 @@
 
       // Video Functions
       function loadVideo(videoUrl) {
+        console.log("Loading video:", videoUrl);
         if (currentMode === "screen-share") {
           stopScreenShare();
         }
@@ -994,15 +999,34 @@
         
         // Ensure the video URL is absolute
         const absoluteUrl = videoUrl.startsWith('http') ? videoUrl : window.location.origin + videoUrl;
+        console.log("Loading video with absolute URL:", absoluteUrl);
+        
+        // Reset video player
+        videoPlayer.pause();
+        videoPlayer.removeAttribute('src');
+        videoPlayer.load();
+        
+        // Set new source
         videoPlayer.src = absoluteUrl;
 
+        // Add error handling for video loading
+        videoPlayer.onerror = function(e) {
+          console.error("Video error:", videoPlayer.error);
+          console.error("Error code:", videoPlayer.error ? videoPlayer.error.code : "unknown");
+          placeholder.style.display = "flex";
+          videoPlayer.style.display = "none";
+          addSystemMessage("Error loading video. Please try a different format or URL.");
+        };
+
         videoPlayer.addEventListener("loadeddata", () => {
+          console.log("Video loaded successfully");
           isVideoLoaded = true;
           addSystemMessage("Video loaded and ready!");
         });
 
         videoPlayer.addEventListener("error", (e) => {
           console.error("Video loading error:", e);
+          console.error("Video error code:", videoPlayer.error ? videoPlayer.error.code : "unknown");
           placeholder.innerHTML = `
                     <div>
                         <div style="font-size: 3rem; margin-bottom: 20px;">❌</div>
@@ -1073,6 +1097,10 @@
             .then((data) => {
               if (data.success) {
                 const videoUrl = window.location.origin + data.videoUrl;
+                console.log("Upload successful, video URL:", videoUrl);
+                // Load video immediately for host
+                loadVideo(videoUrl);
+                // Then notify others
                 socket.emit("set-video", { roomId, videoUrl });
                 urlInput.value = "";
                 fileInput.value = "";
@@ -1090,6 +1118,10 @@
         } else if (urlInput.value.trim()) {
           // Handle URL
           const videoUrl = urlInput.value.trim();
+          console.log("Setting video from URL:", videoUrl);
+          // Load video immediately for host
+          loadVideo(videoUrl);
+          // Then notify others
           socket.emit("set-video", { roomId, videoUrl });
           urlInput.value = "";
           addSystemMessage("Setting video from URL...");
