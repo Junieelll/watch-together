@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch Room</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #1a1a1a;
+        color: white;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+      }
+
+      .room-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .room-id {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9rem;
+      }
+
+      .user-count {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .btn.host {
+        background: linear-gradient(45deg, #ff6b6b, #feca57);
+        border: none;
+      }
+
+      .btn.active {
+        background: linear-gradient(45deg, #4facfe, #00f2fe);
+        border: none;
+      }
+
+      .main-content {
+        flex: 1;
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        max-height: calc(100vh - 80px);
+      }
+
+      .video-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .video-container {
+        flex: 1;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+        min-height: 400px;
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .video-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-size: 1.2rem;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .video-controls {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .video-controls input[type="text"] {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid #333;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .video-controls input[type="text"]::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .video-controls input[type="file"] {
+        display: none;
+      }
+
+      .chat-section {
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .chat-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        max-height: 300px;
+      }
+
+      .chat-message {
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        font-size: 0.9rem;
+        word-wrap: break-word;
+      }
+
+      .chat-message .username {
+        font-weight: bold;
+        color: #feca57;
+        margin-right: 8px;
+      }
+
+      .system-message {
+        text-align: center;
+        color: #888;
+        font-style: italic;
+        font-size: 0.8rem;
+        margin: 10px 0;
+      }
+
+      .chat-input {
+        padding: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        gap: 10px;
+      }
+
+      .chat-input input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid #333;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .chat-input input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .sync-status {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .sync-status.show {
+        opacity: 1;
+      }
+
+      .screen-share-indicator {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: rgba(74, 144, 226, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        display: none;
+      }
+
+      .screen-share-indicator.show {
+        display: block;
+      }
+
+      .connection-status {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .connection-status.show {
+        opacity: 1;
+      }
+
+      .connection-status.connected {
+        background: rgba(34, 197, 94, 0.7);
+      }
+
+      .connection-status.connecting {
+        background: rgba(251, 191, 36, 0.7);
+      }
+
+      .connection-status.failed {
+        background: rgba(239, 68, 68, 0.7);
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          flex-direction: column;
+          padding: 15px;
+        }
+
+        .chat-section {
+          width: 100%;
+          height: 250px;
+        }
+
+        .room-info {
+          gap: 10px;
+        }
+
+        .controls {
+          gap: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="room-info">
+        <div class="room-id">Room: <span id="room-id"></span></div>
+        <div class="user-count">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span id="user-count">1</span>
+        </div>
+        <div id="host-badge" class="btn host" style="display: none">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px"
+          >
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+            ></polygon>
+          </svg>
+          Host
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="copyRoomCode()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path
+              d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+            ></path>
+          </svg>
+          Copy Code
+        </button>
+        <button id="screen-share-btn" class="btn" onclick="toggleScreenShare()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px"
+          >
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span id="screen-share-text">Share Screen</span>
+        </button>
+        <button class="btn" onclick="goHome()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 4px"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Home
+        </button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="video-section">
+        <div class="video-container">
+          <div id="video-placeholder" class="video-placeholder">
+            <div>
+              <div style="font-size: 3rem; margin-bottom: 20px">
+                <svg
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+              </div>
+              <div>Waiting for video...</div>
+              <div style="font-size: 0.9rem; opacity: 0.7; margin-top: 10px">
+                Host will set up the video or start screen sharing
+              </div>
+            </div>
+          </div>
+          <video id="video-player" style="display: none" controls></video>
+          <video
+            id="screen-share-video"
+            style="display: none"
+            autoplay
+            playsinline
+          ></video>
+          <div id="sync-status" class="sync-status">Syncing...</div>
+          <div id="screen-share-indicator" class="screen-share-indicator">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="vertical-align: middle; margin-right: 4px"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            Screen Sharing Active
+          </div>
+          <div id="connection-status" class="connection-status">
+            Connecting...
+          </div>
+        </div>
+
+        <div id="host-controls" class="video-controls" style="display: none">
+          <input
+            type="text"
+            id="video-url-input"
+            placeholder="Direct video URL (.mp4, .webm) or streaming link"
+          />
+          <input type="file" id="video-file-input" accept="video/*" />
+          <button
+            class="btn"
+            onclick="document.getElementById('video-file-input').click()"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="vertical-align: middle; margin-right: 4px"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              ></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+            </svg>
+            Upload
+          </button>
+          <button class="btn" onclick="setVideo()">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="vertical-align: middle; margin-right: 4px"
+            >
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Set Video
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-section">
+        <div class="chat-header">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="vertical-align: middle; margin-right: 6px"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            ></path>
+          </svg>
+          Chat
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="system-message">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="vertical-align: middle; margin-right: 4px"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Welcome to the room!
+          </div>
+        </div>
+        <div class="chat-input">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Type a message..."
+            maxlength="200"
+          />
+          <button class="btn" onclick="sendMessage()">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomId = window.location.pathname.split("/")[2];
+      const username = urlParams.get("name") || "Guest";
+      const isHost = urlParams.get("host") === "true";
+      const initialVideo = urlParams.get("video");
+      const startWithScreen = urlParams.get("screen") === "true";
+
+      let videoPlayer = document.getElementById("video-player");
+      let screenShareVideo = document.getElementById("screen-share-video");
+      let isVideoLoaded = false;
+      let isSyncing = false;
+      let isScreenSharing = false;
+      let localStream = null;
+      let peerConnections = new Map();
+      let currentMode = "none"; // 'none', 'video', 'screen-share'
+
+      // WebRTC Configuration
+      const rtcConfig = {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun3.l.google.com:19302" },
+          { urls: "stun:stun4.l.google.com:19302" },
+          // Add TURN servers for better connectivity
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          }
+        ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: "all",
+        bundlePolicy: "max-bundle",
+        rtcpMuxPolicy: "require"
+      };
+
+      // Initialize
+      document.getElementById("room-id").textContent = roomId;
+
+      // Join room
+      socket.emit("join-room", roomId);
+
+      // Socket event handlers
+      socket.on("room-joined", (data) => {
+        document.getElementById("user-count").textContent = data.userCount;
+
+        if (data.isHost) {
+          document.getElementById("host-badge").style.display = "block";
+          document.getElementById("host-controls").style.display = "flex";
+
+          if (startWithScreen) {
+            // Start screen sharing immediately if requested
+            toggleScreenShare();
+          } else if (initialVideo) {
+            document.getElementById("video-url-input").value = initialVideo;
+            setVideo();
+          }
+        }
+
+        if (data.videoUrl) {
+          loadVideo(data.videoUrl);
+        }
+
+        addSystemMessage(`You joined the room as ${username}`);
+      });
+
+      socket.on("user-joined", (data) => {
+        document.getElementById("user-count").textContent = data.userCount;
+        addSystemMessage("Someone joined the room");
+      });
+
+      socket.on("user-left", (data) => {
+        document.getElementById("user-count").textContent = data.userCount;
+        addSystemMessage("Someone left the room");
+      });
+
+      socket.on("video-set", (data) => {
+        if (currentMode === "screen-share") {
+          stopScreenShare();
+        }
+        loadVideo(data.videoUrl);
+      });
+
+      socket.on("sync-video", (data) => {
+        if (!isVideoLoaded || currentMode !== "video") return;
+
+        isSyncing = true;
+        showSyncStatus();
+
+        const timeDiff = (Date.now() - data.timestamp) / 1000;
+        const targetTime =
+          data.currentTime + (data.action === "play" ? timeDiff : 0);
+
+        videoPlayer.currentTime = targetTime;
+
+        if (data.action === "play") {
+          videoPlayer.play();
+        } else {
+          videoPlayer.pause();
+        }
+
+        setTimeout(() => {
+          isSyncing = false;
+        }, 1000);
+      });
+
+      socket.on("sync-seek", (data) => {
+        if (!isVideoLoaded || isSyncing || currentMode !== "video") return;
+
+        isSyncing = true;
+        showSyncStatus();
+        videoPlayer.currentTime = data.currentTime;
+        setTimeout(() => {
+          isSyncing = false;
+        }, 1000);
+      });
+
+      socket.on("chat-message", (data) => {
+        addChatMessage(data.username, data.message);
+      });
+
+      // WebRTC Screen Sharing Events
+      socket.on("screen-share-started", (data) => {
+        addSystemMessage(
+          `${data.sharer === socket.id ? "You" : "Host"} started screen sharing`
+        );
+        if (data.sharer !== socket.id) {
+          // Request to receive screen share
+          socket.emit("request-screen-share", { roomId, requester: socket.id });
+        }
+      });
+
+      socket.on("screen-share-stopped", () => {
+        addSystemMessage("Screen sharing stopped");
+        hideScreenShare();
+      });
+
+      socket.on("request-screen-share", (data) => {
+        console.log('Received screen share request');
+        if (isScreenSharing) {
+          createPeerConnection(data.requester, true);
+        }
+      });
+
+      // WebRTC Signaling
+      socket.on("webrtc-offer", async (data) => {
+        try {
+          console.log('Received WebRTC offer');
+          const pc = createPeerConnection(data.sender, false);
+          await pc.setRemoteDescription(data.offer);
+          console.log('Creating answer');
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          socket.emit("webrtc-answer", {
+            target: data.sender,
+            answer: answer,
+          });
+
+          showConnectionStatus("connecting");
+        } catch (error) {
+          console.error("Error handling WebRTC offer:", error);
+          showConnectionStatus("failed");
+        }
+      });
+
+      socket.on("webrtc-answer", async (data) => {
+        try {
+          console.log('Received WebRTC answer');
+          const pc = peerConnections.get(data.sender);
+          if (pc) {
+            await pc.setRemoteDescription(data.answer);
+            showConnectionStatus("connected");
+          }
+        } catch (error) {
+          console.error("Error handling WebRTC answer:", error);
+          showConnectionStatus("failed");
+        }
+      });
+
+      socket.on("webrtc-ice-candidate", async (data) => {
+        try {
+          console.log('Received ICE candidate');
+          const pc = peerConnections.get(data.sender);
+          if (pc && data.candidate) {
+            await pc.addIceCandidate(data.candidate);
+          }
+        } catch (error) {
+          console.error("Error handling ICE candidate:", error);
+        }
+      });
+
+      // WebRTC Functions
+      function createPeerConnection(peerId, isInitiator) {
+        console.log(`Creating peer connection for ${peerId}, initiator: ${isInitiator}`);
+        const pc = new RTCPeerConnection(rtcConfig);
+        peerConnections.set(peerId, pc);
+
+        // Add local stream if screen sharing
+        if (isScreenSharing && localStream) {
+          console.log('Adding local stream tracks to peer connection');
+          localStream.getTracks().forEach((track) => {
+            const sender = pc.addTrack(track, localStream);
+            console.log('Added track:', track.kind, 'with sender:', sender);
+          });
+        }
+
+        // Handle remote stream
+        pc.ontrack = (event) => {
+          console.log('Received remote track:', event.track.kind);
+          const remoteStream = event.streams[0];
+          if (!isHost) {  // Only show remote stream for non-host users
+            screenShareVideo.srcObject = remoteStream;
+            showScreenShare();
+            addSystemMessage("Receiving screen share...");
+          }
+        };
+
+        // Handle ICE candidates
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            console.log('Sending ICE candidate to peer:', event.candidate.candidate);
+            socket.emit("webrtc-ice-candidate", {
+              target: peerId,
+              candidate: event.candidate,
+            });
+          }
+        };
+
+        // Handle ICE gathering state
+        pc.onicegatheringstatechange = () => {
+          console.log('ICE gathering state:', pc.iceGatheringState);
+        };
+
+        // Handle ICE connection state changes
+        pc.oniceconnectionstatechange = () => {
+          console.log(`ICE connection state: ${pc.iceConnectionState}`);
+          if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+            console.log('ICE connection failed, attempting to restart...');
+            pc.restartIce();
+          }
+        };
+
+        // Handle connection state changes
+        pc.onconnectionstatechange = () => {
+          console.log(`WebRTC connection state: ${pc.connectionState}`);
+          if (pc.connectionState === "connected") {
+            showConnectionStatus("connected");
+          } else if (pc.connectionState === "failed") {
+            showConnectionStatus("failed");
+            // Attempt to reconnect
+            setTimeout(() => {
+              if (isScreenSharing) {
+                console.log('Attempting to recreate peer connection after failure');
+                createPeerConnection(peerId, true);
+              }
+            }, 2000);
+          }
+        };
+
+        // If initiator, create offer
+        if (isInitiator) {
+          console.log('Creating offer for peer connection');
+          pc.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true,
+            iceRestart: true
+          })
+            .then((offer) => {
+              console.log('Setting local description');
+              return pc.setLocalDescription(offer);
+            })
+            .then(() => {
+              console.log('Sending offer to peer');
+              socket.emit("webrtc-offer", {
+                target: peerId,
+                offer: pc.localDescription,
+              });
+              showConnectionStatus("connecting");
+            })
+            .catch((error) => {
+              console.error("Error in offer creation:", error);
+              showConnectionStatus("failed");
+            });
+        }
+
+        return pc;
+      }
+
+      // Screen Sharing Functions
+      async function toggleScreenShare() {
+        if (isScreenSharing) {
+          stopScreenShare();
+        } else {
+          await startScreenShare();
+        }
+      }
+
+      async function startScreenShare() {
+        try {
+          console.log('Requesting screen share');
+          localStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              mediaSource: "screen",
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+
+          console.log('Screen share stream obtained with tracks:', localStream.getTracks().map(t => t.kind));
+
+          // Show local preview only for host
+          if (isHost) {
+            screenShareVideo.srcObject = localStream;
+            showScreenShare();
+          }
+
+          isScreenSharing = true;
+          updateScreenShareButton();
+
+          // Notify other users
+          socket.emit("start-screen-share", { roomId });
+
+          // Handle stream end
+          localStream.getVideoTracks()[0].addEventListener("ended", () => {
+            console.log('Screen share track ended');
+            stopScreenShare();
+          });
+
+          // Create peer connections for existing users
+          socket.emit("get-room-users", { roomId });
+
+          addSystemMessage("Screen sharing started!");
+        } catch (error) {
+          console.error("Error starting screen share:", error);
+          addSystemMessage("Screen sharing failed: " + error.message);
+          showConnectionStatus("failed");
+        }
+      }
+
+      function stopScreenShare() {
+        if (localStream) {
+          localStream.getTracks().forEach((track) => track.stop());
+          localStream = null;
+        }
+
+        // Close all peer connections
+        peerConnections.forEach((pc) => pc.close());
+        peerConnections.clear();
+
+        isScreenSharing = false;
+        updateScreenShareButton();
+        hideScreenShare();
+        hideConnectionStatus();
+
+        socket.emit("stop-screen-share", { roomId });
+        addSystemMessage("Screen sharing stopped");
+      }
+
+      function showScreenShare() {
+        currentMode = "screen-share";
+        document.getElementById("video-placeholder").style.display = "none";
+        videoPlayer.style.display = "none";
+        screenShareVideo.style.display = "block";
+        document.getElementById("screen-share-indicator").classList.add("show");
+        
+        // Mute the screen share video for the host to prevent audio echo
+        if (isHost) {
+            screenShareVideo.muted = true;
+        }
+      }
+
+      function hideScreenShare() {
+        if (currentMode === "screen-share") {
+          currentMode = "none";
+          document.getElementById("video-placeholder").style.display = "flex";
+          screenShareVideo.style.display = "none";
+          document.getElementById("screen-share-indicator").classList.remove("show");
+          
+          // Clear the srcObject to stop any playing media
+          screenShareVideo.srcObject = null;
+        }
+      }
+
+      function updateScreenShareButton() {
+        const btn = document.getElementById("screen-share-btn");
+        const text = document.getElementById("screen-share-text");
+
+        if (isScreenSharing) {
+          btn.classList.add("active");
+          text.textContent = "Stop Sharing";
+        } else {
+          btn.classList.remove("active");
+          text.textContent = "Share Screen";
+        }
+      }
+
+      // Video Functions
+      function loadVideo(videoUrl) {
+        if (currentMode === "screen-share") {
+          stopScreenShare();
+        }
+
+        const placeholder = document.getElementById("video-placeholder");
+
+        // Check if it's a YouTube URL
+        if (isYouTubeUrl(videoUrl)) {
+          placeholder.innerHTML = `
+                    <div>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+                        <div style="margin-bottom: 15px;">YouTube URLs don't work directly</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">
+                            Try these instead:<br>
+                            • Upload your own video file<br>
+                            • Use direct video URLs (.mp4, .webm)<br>
+                            • Try: https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4
+                        </div>
+                        <button class="btn" onclick="tryYouTubeEmbed('${videoUrl}')">Try YouTube Embed (Limited Sync)</button>
+                    </div>
+                `;
+          placeholder.style.display = "flex";
+          videoPlayer.style.display = "none";
+          screenShareVideo.style.display = "none";
+          addSystemMessage(
+            "YouTube URLs require embedding - sync will be limited"
+          );
+          return;
+        }
+
+        currentMode = "video";
+        placeholder.style.display = "none";
+        videoPlayer.style.display = "block";
+        screenShareVideo.style.display = "none";
+        videoPlayer.src = videoUrl;
+
+        videoPlayer.addEventListener("loadeddata", () => {
+          isVideoLoaded = true;
+          addSystemMessage("Video loaded and ready!");
+        });
+
+        videoPlayer.addEventListener("error", () => {
+          placeholder.innerHTML = `
+                    <div>
+                        <div style="font-size: 3rem; margin-bottom: 20px;">❌</div>
+                        <div style="margin-bottom: 15px;">Video failed to load</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8;">
+                            Try these working formats:<br>
+                            • MP4, WebM, or AVI files<br>
+                            • Direct video URLs<br>
+                            • Upload a local video file<br><br>
+                            Test URL: <br>
+                            <input type="text" value="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" 
+                                  style="width:100%; margin-top:10px; padding:8px; font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid #333; border-radius:5px; color:white;" readonly>
+                        </div>
+                    </div>
+                `;
+          placeholder.style.display = "flex";
+          videoPlayer.style.display = "none";
+          addSystemMessage("Video failed to load. Check the URL format.");
+        });
+      }
+
+      function isYouTubeUrl(url) {
+        const youtubeRegex =
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/;
+        return youtubeRegex.test(url);
+      }
+
+      function tryYouTubeEmbed(videoUrl) {
+        const videoId = extractYouTubeId(videoUrl);
+        if (videoId) {
+          const placeholder = document.getElementById("video-placeholder");
+          placeholder.innerHTML = `
+                    <iframe 
+                        width="100%" 
+                        height="100%" 
+                        src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0" 
+                        frameborder="0" 
+                        allowfullscreen>
+                    </iframe>
+                `;
+          addSystemMessage("YouTube embedded - sync features are limited");
+        }
+      }
+
+      function extractYouTubeId(url) {
+        const regex =
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+      }
+
+      function setVideo() {
+        const urlInput = document.getElementById("video-url-input");
+        const fileInput = document.getElementById("video-file-input");
+
+        if (fileInput.files.length > 0) {
+          // Handle file upload
+          const formData = new FormData();
+          formData.append("video", fileInput.files[0]);
+
+          addSystemMessage("Uploading video...");
+
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                const videoUrl = window.location.origin + data.videoUrl;
+                socket.emit("set-video", { roomId, videoUrl });
+                urlInput.value = "";
+                fileInput.value = "";
+                addSystemMessage("Video uploaded successfully!");
+              } else {
+                addSystemMessage(
+                  "Upload failed: " + (data.error || "Unknown error")
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Upload error:", error);
+              addSystemMessage("Upload failed: " + error.message);
+            });
+        } else if (urlInput.value.trim()) {
+          // Handle URL
+          const videoUrl = urlInput.value.trim();
+          socket.emit("set-video", { roomId, videoUrl });
+          urlInput.value = "";
+          addSystemMessage("Setting video from URL...");
+        }
+      }
+
+      // Video event listeners (only for host)
+      if (isHost) {
+        videoPlayer.addEventListener("play", () => {
+          if (!isSyncing && currentMode === "video") {
+            socket.emit("video-action", {
+              roomId,
+              action: "play",
+              currentTime: videoPlayer.currentTime,
+            });
+          }
+        });
+
+        videoPlayer.addEventListener("pause", () => {
+          if (!isSyncing && currentMode === "video") {
+            socket.emit("video-action", {
+              roomId,
+              action: "pause",
+              currentTime: videoPlayer.currentTime,
+            });
+          }
+        });
+
+        videoPlayer.addEventListener("seeked", () => {
+          if (!isSyncing && currentMode === "video") {
+            socket.emit("seek-video", {
+              roomId,
+              currentTime: videoPlayer.currentTime,
+            });
+          }
+        });
+      }
+
+      // Chat functions
+      function sendMessage() {
+        const input = document.getElementById("chat-input");
+        const message = input.value.trim();
+
+        if (message) {
+          socket.emit("chat-message", { roomId, message, username });
+          addChatMessage(username, message, true);
+          input.value = "";
+        }
+      }
+
+      function addChatMessage(user, message, isOwn = false) {
+        const messagesDiv = document.getElementById("chat-messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "chat-message";
+
+        if (isOwn) {
+          messageDiv.style.background = "rgba(102, 126, 234, 0.3)";
+        }
+
+        messageDiv.innerHTML = `
+                <span class="username">${user}:</span>
+                <span>${escapeHtml(message)}</span>
+            `;
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      function addSystemMessage(message) {
+        const messagesDiv = document.getElementById("chat-messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "system-message";
+        messageDiv.textContent = message;
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Utility functions
+      function copyRoomCode() {
+        navigator.clipboard
+          .writeText(roomId)
+          .then(() => {
+            addSystemMessage("Room code copied to clipboard!");
+          })
+          .catch(() => {
+            addSystemMessage("Failed to copy room code");
+          });
+      }
+
+      function goHome() {
+        window.location.href = "/";
+      }
+
+      function showSyncStatus() {
+        const syncStatus = document.getElementById("sync-status");
+        syncStatus.classList.add("show");
+        setTimeout(() => {
+          syncStatus.classList.remove("show");
+        }, 2000);
+      }
+
+      function showConnectionStatus(status) {
+        const connectionStatus = document.getElementById("connection-status");
+        connectionStatus.className = `connection-status show ${status}`;
+
+        const statusText = {
+          connecting: "Connecting...",
+          connected: "Connected",
+          failed: "Connection Failed",
+        };
+
+        connectionStatus.textContent = statusText[status] || status;
+
+        if (status !== "connecting") {
+          setTimeout(() => {
+            hideConnectionStatus();
+          }, 3000);
+        }
+      }
+
+      function hideConnectionStatus() {
+        const connectionStatus = document.getElementById("connection-status");
+        connectionStatus.classList.remove("show");
+      }
+
+      // Enter key support for inputs
+      document
+        .getElementById("chat-input")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+
+      document
+        .getElementById("video-url-input")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            setVideo();
+          }
+        });
+
+      // Handle page visibility for better sync
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && isVideoLoaded && currentMode === "video") {
+          // Request sync when page becomes visible
+          setTimeout(() => {
+            if (isHost) {
+              socket.emit("video-action", {
+                roomId,
+                action: videoPlayer.paused ? "pause" : "play",
+                currentTime: videoPlayer.currentTime,
+              });
+            }
+          }, 500);
+        }
+      });
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        if (isScreenSharing) {
+          stopScreenShare();
+        }
+      });
+
+      console.log("Watch Room initialized");
+      console.log("Room ID:", roomId);
+      console.log("Username:", username);
+      console.log("Is Host:", isHost);
+    </script>
+  </body>
+</html>

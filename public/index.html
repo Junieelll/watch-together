@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Together</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            opacity: 0.8;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .option-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .option-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .option-title {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .option-desc {
+            opacity: 0.8;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input[type="file"] {
+            padding: 10px 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .upload-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            color: #ffcccc;
+        }
+
+        .success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid rgba(0, 255, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            color: #ccffcc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Watch Together</h1>
+        <p class="subtitle">Sync videos and watch with your loved ones</p>
+
+        <div id="main-options">
+            <div class="option-card" onclick="showCreateRoom()">
+                <div class="option-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Create Room
+                </div>
+                <div class="option-desc">Upload a video or use supported streaming links</div>
+                <button class="btn">Get Started</button>
+            </div>
+
+            <div class="option-card" onclick="showJoinRoom()">
+                <div class="option-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+                        <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+                        <path d="M13 12h3a2 2 0 0 1 2 2v1"></path>
+                        <path d="M13 12h-3a2 2 0 0 0-2 2v1"></path>
+                    </svg>
+                    Join Room
+                </div>
+                <div class="option-desc">Enter a room code to join someone else's session</div>
+                <button class="btn btn-secondary">Join Now</button>
+            </div>
+        </div>
+
+        <div id="create-room" class="hidden">
+            <div class="option-title">Create Your Room</div>
+            
+            <div class="input-group">
+                <input type="text" id="room-name" placeholder="Enter room name (optional)" maxlength="20">
+                <input type="text" id="video-url" placeholder="Video URL - Direct MP4/WebM links work best">
+                <div style="text-align: center; margin: 15px 0; opacity: 0.7;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                    Supported: MP4, WebM, AVI files | Screen sharing available
+                </div>
+                <div style="text-align: center; margin: 15px 0; opacity: 0.7;">OR</div>
+                <input type="file" id="video-file" accept="video/*">
+                <div style="text-align: center; margin: 10px 0; font-size: 0.85rem; opacity: 0.6;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                    </svg>
+                    Max file size: 500MB
+                </div>
+                <div style="text-align: center; margin: 15px 0; opacity: 0.7;">OR</div>
+                <button class="btn btn-secondary" onclick="createRoomWithScreenShare()" style="width: 100%;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                    Start with Screen Sharing
+                </button>
+            </div>
+
+            <div id="upload-progress" class="upload-progress hidden">
+                <div class="progress-bar"></div>
+            </div>
+
+            <div id="messages"></div>
+
+            <button class="btn" onclick="createRoom()">Create Room</button>
+            <button class="btn btn-secondary" onclick="showMainOptions()" style="margin-left: 10px;">Back</button>
+        </div>
+
+        <div id="join-room" class="hidden">
+            <div class="option-title">Join a Room</div>
+            
+            <div class="input-group">
+                <input type="text" id="room-code" placeholder="Enter room code" maxlength="10">
+                <input type="text" id="username" placeholder="Your name" maxlength="20">
+            </div>
+
+            <button class="btn" onclick="joinRoom()">Join Room</button>
+            <button class="btn btn-secondary" onclick="showMainOptions()" style="margin-left: 10px;">Back</button>
+        </div>
+    </div>
+
+    <script>
+        function showCreateRoom() {
+            document.getElementById('main-options').classList.add('hidden');
+            document.getElementById('create-room').classList.remove('hidden');
+        }
+
+        function showJoinRoom() {
+            document.getElementById('main-options').classList.add('hidden');
+            document.getElementById('join-room').classList.remove('hidden');
+        }
+
+        function showMainOptions() {
+            document.getElementById('main-options').classList.remove('hidden');
+            document.getElementById('create-room').classList.add('hidden');
+            document.getElementById('join-room').classList.add('hidden');
+            clearMessages();
+        }
+
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function showMessage(message, isError = false) {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        async function createRoom() {
+            const videoUrl = document.getElementById('video-url').value.trim();
+            const videoFile = document.getElementById('video-file').files[0];
+            const roomName = document.getElementById('room-name').value.trim() || 'My Room';
+
+            if (!videoUrl && !videoFile) {
+                showMessage('Please provide a video URL or upload a video file.', true);
+                return;
+            }
+
+            const roomId = generateRoomId();
+            let finalVideoUrl = videoUrl;
+
+            // Handle file upload
+            if (videoFile) {
+                try {
+                    showMessage('Uploading video...');
+                    document.getElementById('upload-progress').classList.remove('hidden');
+                    
+                    const formData = new FormData();
+                    formData.append('video', videoFile);
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        finalVideoUrl = result.videoUrl;
+                        showMessage('Video uploaded successfully!');
+                        setTimeout(() => {
+                            window.location.href = `/room/${roomId}?video=${encodeURIComponent(finalVideoUrl)}&name=${encodeURIComponent(roomName)}&host=true`;
+                        }, 1000);
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+                } catch (error) {
+                    showMessage(`Upload failed: ${error.message}`, true);
+                    document.getElementById('upload-progress').classList.add('hidden');
+                }
+            } else {
+                // Direct URL
+                window.location.href = `/room/${roomId}?video=${encodeURIComponent(finalVideoUrl)}&name=${encodeURIComponent(roomName)}&host=true`;
+            }
+        }
+
+        function createRoomWithScreenShare() {
+            const roomName = document.getElementById('room-name').value.trim() || 'My Room';
+            const roomId = generateRoomId();
+            window.location.href = `/room/${roomId}?name=${encodeURIComponent(roomName)}&host=true&screen=true`;
+        }
+
+        function joinRoom() {
+            const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
+            const username = document.getElementById('username').value.trim() || 'Guest';
+
+            if (!roomCode) {
+                showMessage('Please enter a room code.', true);
+                return;
+            }
+
+            window.location.href = `/room/${roomCode}?name=${encodeURIComponent(username)}`;
+        }
+
+        // Handle enter key
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('create-room').classList.contains('hidden')) {
+                    createRoom();
+                } else if (!document.getElementById('join-room').classList.contains('hidden')) {
+                    joinRoom();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
