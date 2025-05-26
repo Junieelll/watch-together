@@ -750,6 +750,20 @@
         try {
           console.log('Received WebRTC offer');
           const pc = createPeerConnection(data.sender, false);
+          
+          // Wait for ICE gathering to complete
+          await new Promise((resolve) => {
+            if (pc.iceGatheringState === 'complete') {
+              resolve();
+            } else {
+              pc.onicegatheringstatechange = () => {
+                if (pc.iceGatheringState === 'complete') {
+                  resolve();
+                }
+              };
+            }
+          });
+
           await pc.setRemoteDescription(data.offer);
           console.log('Creating answer');
           const answer = await pc.createAnswer();
@@ -772,6 +786,19 @@
           console.log('Received WebRTC answer');
           const pc = peerConnections.get(data.sender);
           if (pc) {
+            // Wait for ICE gathering to complete
+            await new Promise((resolve) => {
+              if (pc.iceGatheringState === 'complete') {
+                resolve();
+              } else {
+                pc.onicegatheringstatechange = () => {
+                  if (pc.iceGatheringState === 'complete') {
+                    resolve();
+                  }
+                };
+              }
+            });
+
             await pc.setRemoteDescription(data.answer);
             showConnectionStatus("connected");
           }
@@ -796,6 +823,14 @@
       // WebRTC Functions
       function createPeerConnection(peerId, isInitiator) {
         console.log(`Creating peer connection for ${peerId}, initiator: ${isInitiator}`);
+        
+        // Close existing connection if any
+        if (peerConnections.has(peerId)) {
+          console.log('Closing existing peer connection');
+          peerConnections.get(peerId).close();
+          peerConnections.delete(peerId);
+        }
+
         const pc = new RTCPeerConnection(rtcConfig);
         peerConnections.set(peerId, pc);
 
