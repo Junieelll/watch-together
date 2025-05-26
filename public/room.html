@@ -561,12 +561,17 @@
       // WebRTC Configuration
       const rtcConfig = {
         iceServers: [
+          // Google's STUN servers
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
           { urls: "stun:stun2.l.google.com:19302" },
           { urls: "stun:stun3.l.google.com:19302" },
           { urls: "stun:stun4.l.google.com:19302" },
-          // Add TURN servers for better connectivity
+          // Additional STUN servers
+          { urls: "stun:stun.stunprotocol.org:3478" },
+          { urls: "stun:stun.voipbuster.com:3478" },
+          { urls: "stun:stun.voipstunt.com:3478" },
+          // TURN servers for better connectivity
           {
             urls: "turn:openrelay.metered.ca:80",
             username: "openrelayproject",
@@ -581,12 +586,35 @@
             urls: "turn:openrelay.metered.ca:443?transport=tcp",
             username: "openrelayproject",
             credential: "openrelayproject"
+          },
+          // Additional TURN servers
+          {
+            urls: "turn:numb.viagenie.ca",
+            username: "webrtc@live.com",
+            credential: "muazkh"
+          },
+          {
+            urls: "turn:turn.anyfirewall.com:443?transport=tcp",
+            username: "webrtc",
+            credential: "webrtc"
           }
         ],
         iceCandidatePoolSize: 10,
         iceTransportPolicy: "all",
         bundlePolicy: "max-bundle",
-        rtcpMuxPolicy: "require"
+        rtcpMuxPolicy: "require",
+        // Add these options for better connectivity
+        sdpSemantics: "unified-plan",
+        iceServersPolicy: "all",
+        // Enable DTLS for better security and connectivity
+        certificates: undefined,
+        // Add these for better NAT traversal
+        iceTransportPolicy: "all",
+        // Add these for better connection establishment
+        optional: [
+          { DtlsSrtpKeyAgreement: true },
+          { RtpDataChannels: true }
+        ]
       };
 
       // Initialize
@@ -616,12 +644,27 @@
           loadVideo(data.videoUrl);
         }
 
+        // Handle existing screen share
+        if (data.screenSharer) {
+          console.log('Room has active screen share from:', data.screenSharer);
+          if (data.screenSharer !== socket.id) {
+            // Request to receive screen share
+            socket.emit("request-screen-share", { roomId, requester: socket.id });
+          }
+        }
+
         addSystemMessage(`You joined the room as ${username}`);
       });
 
       socket.on("user-joined", (data) => {
         document.getElementById("user-count").textContent = data.userCount;
         addSystemMessage("Someone joined the room");
+        
+        // If we're screen sharing, create a new peer connection for the new user
+        if (isScreenSharing && isHost) {
+          console.log('New user joined, creating peer connection for screen share');
+          createPeerConnection(data.userId, true);
+        }
       });
 
       socket.on("user-left", (data) => {
@@ -695,8 +738,9 @@
       });
 
       socket.on("request-screen-share", (data) => {
-        console.log('Received screen share request');
+        console.log('Received screen share request from:', data.requester);
         if (isScreenSharing) {
+          console.log('Creating peer connection for screen share request');
           createPeerConnection(data.requester, true);
         }
       });
@@ -789,6 +833,9 @@
         // Handle ICE gathering state
         pc.onicegatheringstatechange = () => {
           console.log('ICE gathering state:', pc.iceGatheringState);
+          if (pc.iceGatheringState === 'complete') {
+            console.log('ICE gathering completed');
+          }
         };
 
         // Handle ICE connection state changes
@@ -797,6 +844,13 @@
           if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
             console.log('ICE connection failed, attempting to restart...');
             pc.restartIce();
+            // Try to reconnect after a short delay
+            setTimeout(() => {
+              if (isScreenSharing) {
+                console.log('Attempting to recreate peer connection after failure');
+                createPeerConnection(peerId, true);
+              }
+            }, 2000);
           }
         };
 

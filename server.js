@@ -105,18 +105,38 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomId);
     room.users.add(socket.id);
     
+    // Get the current screen sharer if any
+    const screenSharer = room.screenSharer;
+    
     socket.emit('room-joined', {
       isHost: room.host === socket.id,
       currentTime: room.currentTime,
       isPlaying: room.isPlaying,
       videoUrl: room.videoUrl,
       userCount: room.users.size,
-      screenSharer: room.screenSharer
+      screenSharer: screenSharer
     });
     
-    socket.to(roomId).emit('user-joined', { userCount: room.users.size });
+    // Notify other users about the new user
+    socket.to(roomId).emit('user-joined', { 
+      userCount: room.users.size,
+      userId: socket.id
+    });
     
     console.log(`User ${socket.id} joined room ${roomId}`);
+  });
+
+  socket.on('user-joined', (data) => {
+    const { roomId } = data;
+    const room = rooms.get(roomId);
+    
+    if (room) {
+      // Notify all users about the new user
+      io.to(roomId).emit('user-joined', { 
+        userCount: room.users.size,
+        userId: socket.id
+      });
+    }
   });
 
   socket.on('set-video', (data) => {
